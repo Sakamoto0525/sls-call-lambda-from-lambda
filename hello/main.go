@@ -21,20 +21,14 @@ type Config struct {
 }
 
 func Handler(ctx context.Context) (Response, error) {
-	fmt.Print("====== Start hello functions ======")
-
 	var buf bytes.Buffer
 
 	config := &Config{}
 	envconfig.MustProcess("", config)
 	fmt.Printf("config: %s", config)
 
-	// sess := aws.NewSession(&aws.Config{
-	// 	Region: aws.String("ap-northeast-1"),
-	// })
 	sess := session.Must(session.NewSession(&aws.Config{
 		Region: aws.String("ap-northeast-1"),
-		// Profile: "default",
 	}))
 	lambda := sdklambda.New(sess)
 
@@ -44,9 +38,13 @@ func Handler(ctx context.Context) (Response, error) {
 
 	res, err := lambda.Invoke(input)
 	if err != nil {
-		fmt.Errorf("lambda.Invoke Error: %s", err)
+		fmt.Printf("lambda.Invoke Error: %s", err)
 	}
-	fmt.Printf("lambda.Invoke Succeded: %s", res)
+	fmt.Printf("lambda.Invoke Response: %s, ", res)
+	fmt.Println(res.FunctionError)
+	fmt.Println(res.LogResult)
+	fmt.Println(res.Payload)
+	fmt.Println(res.StatusCode)
 
 	body, err := json.Marshal(map[string]interface{}{
 		"message": "Go Serverless v1.0! Your function executed successfully!",
@@ -65,8 +63,6 @@ func Handler(ctx context.Context) (Response, error) {
 			"X-MyCompany-Func-Reply": "hello-handler",
 		},
 	}
-
-	fmt.Print("====== end hello functions ======")
 
 	return resp, nil
 }
