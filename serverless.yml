@@ -1,0 +1,66 @@
+service: sls-call-lambda-from-lambda
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: go1.x
+  stage: dev
+  region: ap-northeast-1
+  # iam:
+  #  role:
+  #    statements:
+  #      - Effect: "Allow"
+  #        Action:
+  #          - "s3:ListBucket"
+  #        Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ServerlessDeploymentBucket" } ] ]  }
+  #      - Effect: "Allow"
+  #        Action:
+  #          - "s3:PutObject"
+  #        Resource:
+  #          Fn::Join:
+  #            - ""
+  #            - - "arn:aws:s3:::"
+  #              - "Ref" : "ServerlessDeploymentBucket"
+  #              - "/*"
+
+custom:
+  env:
+    TEST: "testDayoDayo"
+    WORLD_URL: !GetAtt [WorldLambdaFunction, Arn]
+  securityGroupIds:
+    test: !Ref SecurityGroup
+    prod: !Ref SecurityGroup
+  securityGroupA: !Ref LambdaSecurityGroupA
+  securityGroupB: !Ref LambdaSecurityGroupB
+  subnetIdA: !Ref PrivateSubnetA
+  subnetIdB: !Ref PrivateSubnetB
+
+package:
+  patterns:
+    - '!./**'
+    - ./bin/**
+
+functions:
+  hello:
+    handler: bin/hello
+    events:
+      - http:
+          path: /hello
+          method: get
+    vpc:
+      securityGroupIds:
+        - ${self:custom.securityGroupA}
+      subnetIds:
+        - ${self:custom.subnetIdA}
+    environment: ${self:custom.env}
+  world:
+    handler: bin/world
+    vpc:
+      securityGroupIds:
+        - ${self:custom.securityGroupB}
+      subnetIds:
+        - ${self:custom.subnetIdB}
+
+resources:
+  - ${file(./cfn/network/vpc-a.yml)}
+  - ${file(./cfn/network/vpc-b.yml)}
